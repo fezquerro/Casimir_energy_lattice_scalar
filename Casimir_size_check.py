@@ -9,7 +9,7 @@ Only the sizes that enter the formula are varied:
   'A'  size N_A of the periodic directions (time included), masses 0.1-0.4, N_L=8-24
   'L'  size N_L of the confined direction, masses M=(1+j/2)/N_L so that mL=1..9 for every N_L
        (lattice spacing a ~ 1/N_L at fixed mL). To keep the finite-N_A effects out, M*N_A >= 10:
-       D=1,2 use N_A=max(96,16 N_L); D=3,4 keep N_A=96 (48 for D=4) to keep the run time reasonable and drop the points with M*N_A < 10.
+       D=1,2 use N_A=max(96,16 N_L); D=3,4 keep N_A=96 (100 for D=4) and drop the points with M*N_A < 10.
 One figure per scan and dimension D=1..4, a panel per boundary condition: Casimir_size_<scan>_D<D>.pdf
 The panels show E_U/(A m^D) against mL with the continuum curve. Dirichlet and Neumann share a panel:
 their lattice Casimir energies are exactly the same (they differ only in the boundary energy C1).
@@ -19,7 +19,7 @@ from modules.energy_formulas import casimir_scan
 from modules.plotting import flat, plot_continuum, save, LETTER, LABELS_DN, PLOT_BOUNDS, MASSES, LV, NA
 
 MIN_MNA=10#smallest M*N_A kept in the 'L' scan
-VALUES={'A':{1:[16,32,48,96,160],2:[16,32,48,96,160],3:[16,32,48,96,160],4:[16,24,32,48]},
+VALUES={'A':{1:[16,32,48,96,160],2:[16,32,48,96,160],3:[16,32,48,96,160],4:[16,32,48,64,100]},
         'L':{D:[2,6,10,16,24,32] for D in range(1,5)}}
 LABEL={'A':'$N_A=%g$','L':'$N_L=%g$'}
 TITLE={'A':'Size $N_A$ of the periodic directions, $D=%d$, $M=0.1$-$0.4$, $N_L=8$-$24$',

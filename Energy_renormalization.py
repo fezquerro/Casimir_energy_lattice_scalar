@@ -4,7 +4,7 @@ Created on Wed Feb 28 12:05:20 2024
 
 @author: usuario
 
-Divergent bulk and boundary contributions of the lattice energy, D=1..4 (N_A=100, 48 for D=4).
+Divergent bulk and boundary contributions of the lattice energy, D=1..4 (N_A=100).
 The total energy per unit area splits exactly as N_L*e_U(N_L) = C0*L_U + C1^U + E_U/A,
 with L_U = N_L (N_L-1/2 for Zaremba). This script compares:
 1. the renormalization method, one figure per boundary condition with a panel per D (dots),
@@ -24,7 +24,7 @@ plt.rcParams.update({
 })
 plt.rc('text.latex', preamble=r'\usepackage{braket}')
 
-NA={1:100,2:100,3:100,4:48}#size of the periodic directions (time included); 48 for D=4 to keep the run time reasonable
+NA={1:100,2:100,3:100,4:100}#size of the periodic directions (time included)
 m=[0.2,0.22,0.25,0.3,0.4]
 Lv=list(range(10,101,10))
 NLref=Lv[-1]#periodic bulk subtracted from dir/neu/zar

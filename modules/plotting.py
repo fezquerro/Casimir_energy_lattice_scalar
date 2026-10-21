@@ -25,7 +25,7 @@ COLORS = {'per': 'C0', 'anti': 'C1', 'dir': 'C2', 'zar': 'C4'}
 # default parameters of the Casimir figures
 MASSES = [0.1, 0.2, 0.3, 0.4]
 LV = [range(8, 25)] * len(MASSES)#N_L values for each mass
-NA = {1: 96, 2: 96, 3: 96, 4: 48}#size of the periodic directions (time included); 48 for D=4 to keep the run time reasonable
+NA = {1: 96, 2: 96, 3: 96, 4: 100}#size of the periodic directions (time included)
 
 
 def flat(v):

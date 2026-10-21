@@ -59,7 +59,7 @@ This code was developed for the PhD thesis **[Properties of the quantum vacuum i
 
 ## Running
 
-Requirements: Python 3 with `numpy`, `matplotlib` and `mpmath`, and a LaTeX installation (the figures use `text.usetex` and the `braket` package).
+Requirements: Python 3 with `numpy`, `scipy` and `matplotlib`, and a LaTeX installation (the figures use `text.usetex` and the `braket` package).
 
 Run each script from the repository folder, for example
 ```bash
@@ -67,7 +67,7 @@ python Casimir_lattice.py
 ```
 The figures are saved in `plots/`. `Checks.py` only prints the deviations it finds.
 
-Approximate running times: `Casimir_cont_ren.py` a few seconds, `Casimir_lattice.py` about 1 minute, `Energy_renormalization.py` about 2 minutes, `Casimir_size_check.py` about 3 minutes and `Casimir_prescription_compare.py` about 5 minutes. To keep these times reasonable, the periodic directions have size $N_A=48$ for $D=4$ (the cost grows as $N_A^D$: $N_A=100$ would make each $D=4$ point about 20 times slower).
+Approximate running times: `Checks.py` and `Casimir_cont_ren.py` about 1 second, `Casimir_lattice.py` about 10 seconds, `Energy_renormalization.py`, `Casimir_prescription_compare.py` and `Casimir_size_check.py` about 1 minute (most of it in $D=4$). The sums run only over the distinct transverse modes: $\sin^2(\pi n/N)=\sin^2(\pi(N-n)/N)$ and the spatial periodic directions of equal size can be permuted, which reduces the number of terms from $N_A^D$ to about $(N_A/2)^D/(D-1)!$ (from $10^8$ to $1.2\cdot10^6$ for $D=4$, $N_A=100$).
 
 ## Figures
 
