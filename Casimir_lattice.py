@@ -5,7 +5,7 @@ Created on Mon Nov 14 14:24:14 2022
 @author: fer
 
 Lattice Casimir energy from the exact formula (casimir_exact: closed-form sum over the confined direction,
-limit N_L0 -> infinity), compared with the continuum.
+no reference lattice), compared with the continuum.
 Dirichlet and Neumann have exactly the same lattice Casimir energy and are shown together.
 Figures:
   Casimir_lattice_2ds.pdf      D=2, all the boundary conditions together
@@ -30,7 +30,7 @@ def plot_all_bounds(D,fname):
  plt.ylabel('$E_U/(Am^%d)$'%D,fontsize=14)
  symlog(1e-13,[-1e-2,-1e-5,-1e-8,-1e-11,0,1e-11,1e-8,1e-5,1e-2])
  plt.legend(prop={'size': 7},loc='center',ncol=2)#positive values above, negative below: the middle is empty
- plt.title('All boundary conditions, $D=%d$, $N_A=%d$, $N_{L_0}\\to\\infty$'%(D,NA[D]),fontsize=11)
+ plt.title('All boundary conditions, $D=%d$, $N_A=%d$'%(D,NA[D]),fontsize=11)
  save(fname)
 
 
@@ -47,5 +47,5 @@ for bound in PLOT_BOUNDS:
   print(NAMES[bound],'d=%d'%d,'mL=%.2f-%.2f'%(min(flat(x)),max(flat(x))))
   plot_Casimir(C,x,bound,d)
  style_D(bound)
- plt.title('%s, $N_A=%s$ for $D=1,2,3,4$, $N_{L_0}\\to\\infty$'%(LABELS_DN[bound],sizes),fontsize=11)
+ plt.title('%s, $N_A=%s$ for $D=1,2,3,4$'%(LABELS_DN[bound],sizes),fontsize=11)
  save('Casimir_lattice_D'+NAMES[bound]+'s.pdf')

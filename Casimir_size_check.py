@@ -4,7 +4,7 @@ Created on Mon Nov 14 14:24:14 2022
 
 @author: fer
 
-Finite-size checks of the exact lattice Casimir energy (casimir_exact, N_L0 -> infinity) against the continuum.
+Finite-size checks of the exact lattice Casimir energy (casimir_exact) against the continuum.
 Only the sizes that enter the formula are varied:
   'A'  size N_A of the periodic directions (time included), masses 0.1-0.4, N_L=8-24
   'L'  size N_L of the confined direction, masses M=(1+j/2)/N_L so that mL=1..9 for every N_L

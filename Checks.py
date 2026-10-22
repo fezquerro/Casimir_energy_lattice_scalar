@@ -9,12 +9,16 @@ Consistency checks of modules/energy_formulas.py (replaces check_eigenvalues.py 
 2. the closed-form sum (ener_fast) equals the explicit sum over all the modes (ener_Df)
 3. N_L*ener_Df = C0*L_U + C1 + casimir_exact exactly, and casimir_finite_ref -> casimir_exact for large N_L0
 4. casimir_exact/m^D -> continuum as the lattice spacing goes to zero, with O(a^2) corrections
+5. massless case: the massive continuum formula tends to the massless one, and casimir_exact at M=0 tends to it
+   as N_L grows. At M=0 the finite size N_A of the periodic directions only decays as a power of N_L/N_A,
+   so N_A/N_L is taken large (larger for small D).
+6. no integer overflow (numpy int is int32 on Windows): lattice sizes above 2^31 given as Python ints and as numpy int32
 Every line prints the largest deviation found.
 """
 import numpy as np
-from modules.energy_formulas import (BOUNDS, _confined_modes, phys_length, ener_Df, ener_fast,
+from modules.energy_formulas import (BOUNDS, _confined_modes, _size, phys_length, ener_Df, ener_fast,
                                      bulk_C0, boundary_C1, casimir_exact, casimir_finite_ref)
-from modules.continuum import casimir_continuum
+from modules.continuum import casimir_continuum, casimir_continuum_massless
 
 
 def lap1d(N, bound):
@@ -77,3 +81,30 @@ for b in BOUNDS:
         NA = max(96, 16 * NL)
         dev.append(abs(casimir_exact([NA, NA], NL, M, b) / M**2 / casimir_continuum(2.4, 2, b) - 1))
     print('   %-4s N_L=8,16,32,64: ' % b + '  '.join('%.1e' % v for v in dev))
+
+print('5. massless case')
+print('   (mL)^D * continuum(mL=1e-4) / massless continuum - 1')
+for D in range(1, 5):
+    print('   D=%d  ' % D + '  '.join('%s %+.1e' % (b, casimir_continuum(1e-4, D, b) * 1e-4**D / casimir_continuum_massless(D, b) - 1)
+                                    for b in BOUNDS))
+print('   casimir_exact(M=0)*L^D / massless continuum - 1, with N_A = r*N_L')
+#   D   N_L values        r=N_A/N_L
+for D, NLs, r in [(1, [4, 8, 16, 32], 4096), (2, [4, 8, 16, 32], 128), (3, [4, 8, 16], 32), (4, [4, 6, 8, 12], 16)]:
+    for b in BOUNDS:
+        dev = [casimir_exact([r * NL] * D, NL, 0.0, b) * phys_length(NL, b)**D / casimir_continuum_massless(D, b) - 1 for NL in NLs]
+        print('   D=%d r=%-4d %-4s N_L=%s: ' % (D, r, b, ','.join(map(str, NLs))) + '  '.join('%+.1e' % v for v in dev))
+
+print('6. integer overflow')
+L32 = [np.int32(224)] * 4
+print('   N_A^D of [224]^4 given as int32: _size %.0f, exact %d, np.prod %d' % (_size(L32), 224**4, np.prod(L32)))
+#   L_periodic      N_L    (volume N_A^D*N_L > 2^31)
+for Lp, NL in [([70000], 40000), ([2000, 2000], 600)]:
+    Lp32, NL32 = [np.int32(L) for L in Lp], np.int32(NL)
+    split = same = 0
+    for b in BOUNDS:
+        e = ener_fast(Lp, NL, 0.3, b)
+        split = max(split, abs(NL * e - (bulk_C0(Lp, 0.3) * phys_length(NL, b) + boundary_C1(Lp, 0.3, b) + casimir_exact(Lp, NL, 0.3, b))))
+        same = max(same, abs(ener_fast(Lp32, NL32, 0.3, b) - e),
+                   abs(casimir_finite_ref(Lp32, NL32, np.int32(2 * NL), 0.3, b) - casimir_finite_ref(Lp, NL, 2 * NL, 0.3, b)))
+    print('   L_periodic=%s, N_L=%d (volume %.1e): split max |diff| = %.1e, int32 vs int max |diff| = %.1e'
+          % (Lp, NL, _size(Lp) * NL, split, same))

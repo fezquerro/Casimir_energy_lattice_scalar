@@ -6,7 +6,7 @@ Bessel series: sum_c (+-1)^(c+1) K_{(D+1)/2}(a c mL)/c^{(D+1)/2}, summed until t
 (scipy.special.kv, all the terms at once).
 """
 import numpy as np
-from scipy.special import kv
+from scipy.special import kv, gamma, zeta
 
 
 def _bessel_sum(z, nu, ep, alternating):
@@ -55,3 +55,23 @@ _CONT = {'per': Cas_Pergen, 'anti': Cas_AntiPergen, 'dir': Cas_Dirgen, 'neu': Ca
 def casimir_continuum(mL, D, bound, ep=1e-12):
     """E_U/(A m^D) in the continuum for boundary condition bound ('per', 'anti', 'dir', 'neu', 'zar')."""
     return float(_CONT[bound](mL, D, ep))
+
+
+def casimir_continuum_massless(D, bound):
+    """
+    Massless continuum Casimir energy E_U/A = c/L^D (thesis, Chapter 2); returns c.
+    It is the limit mL -> 0 of (mL)^D casimir_continuum. With nu=(D+1)/2 and c_P = Gamma(nu) zeta(D+1)/pi^nu:
+      periodic -c_P,  anti-periodic (1-2^-D) c_P,  Dirichlet = Neumann -c_P/2^(D+1),  Zaremba (2^D-1) c_P/2^(2D+1)
+    e.g. D=3: -pi^2/90, 7pi^2/720, -pi^2/1440, 7pi^2/11520.
+    """
+    nu = (D + 1) / 2
+    cP = gamma(nu) * zeta(D + 1) / np.pi**nu
+    if bound == 'per':
+        return -cP
+    if bound == 'anti':
+        return (1 - 2.0**-D) * cP
+    if bound in ['dir', 'neu']:
+        return -cP / 2**(D + 1)
+    if bound == 'zar':
+        return (2**D - 1) * cP / 2**(2 * D + 1)
+    raise ValueError(f"Unknown boundary condition: {bound}")

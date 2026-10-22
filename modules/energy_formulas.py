@@ -21,6 +21,12 @@ def phys_length(NL, bound):
     return NL - 0.5 if bound == 'zar' else NL
 
 
+def _size(L_periodic):
+    """Number of sites of the periodic directions, as a float. The product is done with Python ints:
+    np.prod gives int32 on Windows, which overflows above 2^31 (e.g. 224^4)."""
+    return float(math.prod(int(L) for L in L_periodic))
+
+
 def _confined_modes(Ly, bound):
     """Eigenvalues sin^2(...) of the confined direction (the lattice Laplacian ones divided by 4)."""
     if bound == 'dir':  # Dirichlet bc
@@ -53,7 +59,7 @@ def ener_Df(L_periodic, Ly, m, bound):
     """
     D = len(L_periodic)
     lambda_y = _confined_modes(Ly, bound)
-    volume = float(np.prod(L_periodic)) * Ly#float: np.prod gives int32 on Windows, which overflows above 2^31
+    volume = _size(L_periodic) * Ly
 
     # Build the D-dimensional array of the periodic directions using broadcasting
     S = np.full(tuple(L_periodic), m * m / 4, dtype=float)#add the mass term to the denom
@@ -109,7 +115,7 @@ class _Modes:
     shch = sinh(theta) cosh(theta) = sqrt(S(1+S)). A sum over all the modes of lambda_t*f is sum(wlt*f).
     """
     def __init__(self, L_periodic, m):
-        self.norm = float(np.prod(L_periodic))#float: np.prod gives int32 on Windows, which overflows above 2^31
+        self.norm = _size(L_periodic)
         lt0, w0 = _distinct_sums(L_periodic[0], 1)#time direction, apart because lambda_t enters the energy
         sums, w = np.zeros(1), np.ones(1)
         for N, k in Counter(L_periodic[1:]).items():#spatial directions, grouped by size
@@ -168,7 +174,7 @@ def ener_periodic(L_periodic, m):
 
 
 def bulk_C0(L_periodic, m):
-    """Exact bulk energy density C0 = 1/2 - <lambda_t/sqrt(S(1+S))> (limit N_L0 -> infinity of thesis eq. 3.78)."""
+    """Exact bulk energy density C0 = 1/2 - <lambda_t/sqrt(S(1+S))> (thesis eq. 3.78 estimates it with a reference lattice)."""
     modes = _Modes(L_periodic, m)
     return 0.5 - np.sum(modes.wlt / modes.shch) / modes.norm
 
@@ -181,7 +187,7 @@ def boundary_C1(L_periodic, m, bound):
     For m=0, 'per' and 'neu' include the term -1/(2 N0 A) from the removed constant mode,
     so that N_L*ener_Df = bulk_C0*L_U + boundary_C1 + casimir_exact holds exactly also at m=0.
     """
-    norm = float(np.prod(L_periodic))
+    norm = _size(L_periodic)
     zero_mode = -0.5 / norm if (m == 0 and bound in ['per', 'neu']) else 0.0
     if bound == 'anti':
         return 0.0
@@ -200,8 +206,8 @@ def boundary_C1(L_periodic, m, bound):
 
 def casimir_exact(L_periodic, NL, m, bound):
     """
-    Casimir energy per unit transverse area, E_U/A, in the limit N_L0 -> infinity.
-    No reference lattice is needed. Divide by m**D (D=len(L_periodic)) to compare with the continuum.
+    Casimir energy per unit transverse area, E_U/A, computed directly from the closed-form sum.
+    No reference lattice is needed (casimir_finite_ref tends to it for a large reference lattice). Divide by m**D (D=len(L_periodic)) to compare with the continuum.
     NL is the size of the direction with boundary condition bound (an int, or a list to reuse the transverse modes).
     For 'zar' the physical length is NL-1/2.
     """
@@ -262,7 +268,7 @@ def casimir_second_diff(L_periodic, NL, L0, m, bound):
 def casimir_scan(L_periodic, Lv, m, bound, NL0=None):
     """
     E_U/(A m^D) and the physical length mL for every mass m[i] and every N_L in Lv[i].
-    NL0 is the size of the reference lattice; None gives the exact N_L0 -> infinity result.
+    NL0 is the size of the reference lattice; None gives the exact result (casimir_exact).
     """
     D = len(L_periodic)
     C = []
