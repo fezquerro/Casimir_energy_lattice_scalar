@@ -18,7 +18,7 @@ LETTER = {'per': 'P', 'anti': 'A', 'dir': 'D', 'neu': 'N', 'zar': 'Z'}#used in E
 LABELS = {'per': 'Periodic', 'anti': 'Anti-periodic', 'dir': 'Dirichlet', 'neu': 'Neumann', 'zar': 'Zaremba'}#used in legends and titles
 # Dirichlet and Neumann have exactly the same lattice Casimir energy (they differ only in the boundary energy C1),
 # so the Casimir figures show 'dir' labelled as both
-PLOT_BOUNDS = ['per', 'anti', 'dir', 'zar']
+PLOT_BOUNDS = ['per', 'dir', 'anti', 'zar']#order of the panels: first row P, D=N; second row A, Z
 LABELS_DN = dict(LABELS, dir='Dirichlet = Neumann')
 COLORS = {'per': 'C0', 'anti': 'C1', 'dir': 'C2', 'zar': 'C4'}
 

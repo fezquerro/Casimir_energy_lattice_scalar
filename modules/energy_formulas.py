@@ -12,6 +12,8 @@ Ly (or NL) is the size of the direction with boundary condition bound:
 import math
 from collections import Counter
 import numpy as np
+from scipy.integrate import quad
+from scipy.special import ive
 
 BOUNDS = ['per', 'anti', 'dir', 'neu', 'zar']
 
@@ -232,6 +234,113 @@ def casimir_exact(L_periodic, NL, m, bound):
         else:
             raise ValueError(f"Unknown boundary condition: {bound}")
         return -np.sum(w * g) / modes.norm
+    return [one(N) for N in NL] if np.ndim(NL) else one(NL)
+
+
+# ----------------------------------------------------------------------------
+# Infinite transverse lattice (N_0, N_mu -> infinity: infinite walls at zero temperature)
+# Every periodic direction is summed with (1/N) sum_n e^{-t sin^2(pi n/N)} = sum_w h_{|w|N}(t), h_k(t) = e^{-t/2} I_k(t/2),
+# keeping only w=0 (no transverse winding); the time direction, weighted with lambda_0, gives kappa_0 = -dh_0/dt.
+# All the functions hold also for m=0.
+# ----------------------------------------------------------------------------
+
+def _ive(k, x):
+    """e^{-x} I_k(x). scipy's ive gives nan above x = 2^30; from x = 1e7 on the uniform (Debye) expansion
+    with its first correction is used instead (relative error < 1e-11)."""
+    if x < 1e7:
+        return ive(k, x)
+    sq = np.hypot(k, x)#sqrt(k^2+x^2) without overflow
+    return np.exp(k * k / (sq + x) - k * np.arcsinh(k / x)) / np.sqrt(2 * np.pi * sq) * (1 + (3 - 5 * (k / sq)**2) / (24 * sq))
+
+
+def _h(k, t):
+    """h_k(t) = e^{-t/2} I_k(t/2): average over an infinite chain of e^{-t lambda} for walks that wind k sites."""
+    return _ive(k, t / 2)
+
+
+def _kappa0(t):
+    """kappa_0(t) = -dh_0/dt = e^{-x}(I_0 - I_1)(x)/2, x = t/2: the same average with the weight lambda_0 of the time
+    direction. The difference cancels at large x (loses log10(x) digits): for x >= 1e4 its asymptotic series
+    (2 pi x)^{-1/2} [1/(2x) + 3/(16x^2) + 45/(256x^3) + 25200/(98304x^4) + O(x^-5)] is used."""
+    x = t / 2
+    if x < 1e4:
+        return (_ive(0, x) - _ive(1, x)) / 2
+    y = 1 / x
+    return y * (0.5 + y * (3 / 16 + y * (45 / 256 + y * 25200 / 98304))) / np.sqrt(2 * np.pi * x) / 2
+
+
+def _t_integral(f, lo, hi):
+    """int_0^infinity f(t) dt in the variable u = ln t, int du e^u f(e^u): power-law tails of f (m=0) become
+    exponential decays. The integrand changes between t = lo and hi, where the u range is split every decade.
+    The absolute tolerance of each piece is relative to the sum of the previous ones (the tails can be negligible)."""
+    def g(u):
+        return np.exp(u) * f(np.exp(u)) if u < 700 else 0.0
+    n = max(1, int(np.ceil(np.log10(hi / lo))))
+    edges = [-np.inf] + list(np.log(lo) + np.log(10) * np.arange(n + 1)) + [np.inf]
+    total = 0.0
+    for a, b in zip(edges[:-1], edges[1:]):
+        total += quad(g, a, b, limit=200, epsabs=1e-14 * abs(total), epsrel=1e-12)[0]
+    return total
+
+
+def _decay(m2):
+    """Scale 4/m2 of e^{-t m2/4}; for m2 = 0 the integrands decay as a power of t, taken care of by _t_integral."""
+    return 4 / m2 if m2 > 0 else 1e4
+
+
+def _J(D, m, c):
+    """J(c) = int_0^inf dt e^{-t(M^2/4+c)} kappa_0 h_0^{D-1}, the limit of <lambda_0/(S+c)> (article eq. Jc)."""
+    return _t_integral(lambda t: np.exp(-t * (m * m / 4 + c)) * _kappa0(t) * _h(0, t)**(D - 1), 0.1, 10 * _decay(m * m + 4 * c))
+
+
+def bulk_C0_inf(D, m):
+    """Bulk energy density of the infinite transverse lattice with D periodic directions (article eq. C0inf):
+    C0^inf = 1/2 - int_0^inf dt e^{-t M^2/4} kappa_0 h_0^D. bulk_C0 tends to it as N_A grows."""
+    return 0.5 - _t_integral(lambda t: np.exp(-t * m * m / 4) * _kappa0(t) * _h(0, t)**D, 0.1, 10 * _decay(m * m))
+
+
+def boundary_C1_inf(D, m, bound):
+    """
+    Boundary energy of the infinite transverse lattice: C1^P = C1^A = 0,
+    C1^D = -1/2 + J(0)/2 + J(1)/2, C1^N = -J(0)/2 + J(1)/2, C1^Z = -1/4 + J(1)/2.
+    boundary_C1 tends to it as N_A grows.
+    """
+    if bound in ['per', 'anti']:
+        return 0.0
+    J1 = _J(D, m, 1)
+    if bound == 'zar':
+        return -0.25 + 0.5 * J1
+    J0 = _J(D, m, 0)
+    if bound == 'dir':
+        return -0.5 + 0.5 * J0 + 0.5 * J1
+    if bound == 'neu':
+        return -0.5 * J0 + 0.5 * J1
+    raise ValueError(f"Unknown boundary condition: {bound}")
+
+
+def casimir_inf(D, NL, m, bound):
+    """
+    Casimir energy per unit area of infinite walls at zero temperature, D periodic directions:
+    E_U^inf/A = -2 L_U int_0^inf dt e^{-t M^2/4} kappa_0 h_0^{D-1} W(t), with the windings W = sum_{w>=1} sigma_U^w h_{w l_U}
+    and (l_U, sigma_U) = (N_L, +1) P, (N_L, -1) A, (2N_L, +1) D and N, (2N_L-1, -1) Z.
+    For t < l^2/4 W is summed directly (h_{wl} ~ e^{-(wl)^2/t}: four windings are exact to round-off); for larger t
+    with the chain identity read backwards, W = [(1/l) sum_n e^{-t sin^2(pi(n+phi)/l)} - h_0]/2, phi = 0 (sigma=+1)
+    or 1/2 (sigma=-1), which sums all the windings at once and also holds at m=0.
+    casimir_exact tends to it as N_A grows. NL can be a list, as in casimir_exact.
+    """
+    ell, sigma = {'per': (1, 1), 'anti': (1, -1), 'dir': (2, 1), 'neu': (2, 1), 'zar': (2, -1)}[bound]
+
+    def one(N):
+        l = ell * int(N) - (1 if bound == 'zar' else 0)#Python int: no int32 overflow in l*l
+        lam = np.sin(np.pi * (np.arange(l) + (0 if sigma > 0 else 0.5)) / l)**2
+
+        def f(t):
+            if t < l * l / 4:
+                w = sigma * _h(l, t) + _h(2 * l, t) + sigma * _h(3 * l, t) + _h(4 * l, t)
+            else:
+                w = 0.5 * (np.mean(np.exp(-t * lam)) - _h(0, t))
+            return np.exp(-t * m * m / 4) * _kappa0(t) * _h(0, t)**(D - 1) * w
+        return -2 * phys_length(N, bound) * _t_integral(f, 0.1, 10 * max(l * l, _decay(m * m)))
     return [one(N) for N in NL] if np.ndim(NL) else one(NL)
 
 

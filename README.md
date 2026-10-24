@@ -30,6 +30,7 @@ This code was developed for the PhD thesis **[Properties of the quantum vacuum i
   $$N_L\, e_U(N_L) = C_0\, L_U + C_1^U + \frac{E_U}{A},$$
 
   with $C_0$ the bulk energy density, $C_1^U$ the boundary energy and $E_U/A$ the Casimir energy, which decays exponentially with $N_L$. All three are computed in closed form.
+- **Infinite transverse lattice**: the limits $N_A\to\infty$ (infinite walls at zero temperature), $C_0^\infty$, $C_1^{U,\infty}$ and $E_U^\infty/A$, are one-dimensional integrals of modified Bessel functions, $h_k(t)=e^{-t/2}I_k(t/2)$; $E_U^\infty$ is a sum over the windings between the images created by the walls. The finite lattice differs from them by the modes that wind around the time direction (finite temperature) or a parallel direction (finite area).
 - **Dirichlet and Neumann** have exactly the same lattice Casimir energy: they differ only in the boundary term $C_1$.
 - **Boundary terms and bulk energy in one dimension less**: with $e_0$ and $e_1$ the bulk energy of the lattice with one dimension less at masses $m$ and $\sqrt{m^2+4}$,
   $C_1^D = -(e_0+e_1)/2$, $C_1^N = (e_0-e_1)/2$, $C_1^Z = -e_1/2$.
@@ -42,7 +43,7 @@ This code was developed for the PhD thesis **[Properties of the quantum vacuum i
 
 | File | Contents |
 |---|---|
-| `energy_formulas.py` | Lattice formulas. `ener_Df` (explicit sum over all the modes), `ener_fast` (closed-form sum over the confined direction), `bulk_C0`, `boundary_C1`, `casimir_exact` (exact Casimir energy, no reference lattice), `casimir_finite_ref` (prescription with a reference lattice), `casimir_second_diff` (second-difference renormalization), `casimir_scan` (Casimir energy and $mL$ for lists of masses and $N_L$). |
+| `energy_formulas.py` | Lattice formulas. `ener_Df` (explicit sum over all the modes), `ener_fast` (closed-form sum over the confined direction), `bulk_C0`, `boundary_C1`, `casimir_exact` (exact Casimir energy, no reference lattice), `casimir_finite_ref` (prescription with a reference lattice), `casimir_second_diff` (second-difference renormalization), `casimir_scan` (Casimir energy and $mL$ for lists of masses and $N_L$). Infinite transverse lattice: `bulk_C0_inf`, `boundary_C1_inf`, `casimir_inf` (also at $m=0$). |
 | `continuum.py` | Continuum Casimir energy for every boundary condition, `casimir_continuum(mL, D, bound)`, and its massless limit $E_U/A = c/L^D$, `casimir_continuum_massless(D, bound)`. |
 | `plotting.py` | Shared plot helpers, labels, colors and default parameters (masses, $N_L$ range, $N_A$). Every figure is saved in `plots/`. |
 
@@ -52,11 +53,12 @@ This code was developed for the PhD thesis **[Properties of the quantum vacuum i
 |---|---|
 | `Casimir_lattice.py` | Exact lattice Casimir energy vs the continuum: all the boundary conditions together for $D=2$ and $D=3$, and $D=1..4$ together for each boundary condition. |
 | `Casimir_massless.py` | Massless case: exact lattice Casimir energy at $M=0$, $E_U L^D/A$ against $N_L$, vs the massless continuum value, $D=1..4$. The periodic directions are taken much larger than $N_L$ ($N_A = rN_L$), since at $M=0$ their finite-size effects decay only as a power of $N_L/N_A$. |
+| `Casimir_infinite_compare.py` | Casimir energy of the finite lattice vs infinite walls at zero temperature, $E_U$ vs $E_U^\infty$: $E_U/A$ against $N_L$ at $M=0.1$ for several $N_A$, $D=1..4$. Prints $E_U/E_U^\infty-1$ on the lattices of the thesis. |
 | `Casimir_size_check.py` | Finite-size effects of the exact Casimir energy: scan of the size $N_A$ of the periodic directions and of the size $N_L$ of the confined direction at fixed $mL$ (continuum limit), $D=1..4$. |
 | `Casimir_prescription_compare.py` | Exact Casimir energy vs the prescription with a reference lattice $N_{L_0}$, $D=1..4$. Prints the largest relative difference for $N_{L_0} = N_A/2,\ N_A,\ 2N_A$. |
 | `Casimir_cont_ren.py` | Casimir energy from the second-difference renormalization $E(N_L)+E(N_L+2L_0)-2E(N_L+L_0)$, periodic and Dirichlet, $D=2$. |
 | `Energy_renormalization.py` | Divergent contributions: bulk ($C_0$) and boundary ($C_1$) terms from the energies vs the exact formulas, and the bulk energy in one dimension less recovered from the boundary terms. |
-| `Checks.py` | Consistency checks: eigenvalues of the lattice operator built as a matrix vs the analytic modes, `ener_fast` vs `ener_Df`, the exact bulk/boundary/Casimir decomposition, the reference prescription for large $N_{L_0}$, the $O(a^2)$ approach to the continuum, and the massless case (lattice at $M=0$ vs the massless continuum formulas). |
+| `Checks.py` | Consistency checks: eigenvalues of the lattice operator built as a matrix vs the analytic modes, `ener_fast` vs `ener_Df`, the exact bulk/boundary/Casimir decomposition, the reference prescription for large $N_{L_0}$, the $O(a^2)$ approach to the continuum, the massless case (lattice at $M=0$ vs the massless continuum formulas), integer overflow on large lattices, and the infinite transverse lattice (`bulk_C0_inf`, `boundary_C1_inf`, `casimir_inf` vs reference values and vs large finite lattices). |
 
 ## Running
 
@@ -68,7 +70,7 @@ python Casimir_lattice.py
 ```
 The figures are saved in `plots/`. `Checks.py` only prints the deviations it finds.
 
-Approximate running times: `Checks.py` and `Casimir_cont_ren.py` about 1 second, `Casimir_lattice.py` about 10 seconds, `Energy_renormalization.py`, `Casimir_prescription_compare.py`, `Casimir_size_check.py` and `Casimir_massless.py` about 1 minute (most of it in $D=4$). The sums run only over the distinct transverse modes: $\sin^2(\pi n/N)=\sin^2(\pi(N-n)/N)$ and the spatial periodic directions of equal size can be permuted, which reduces the number of terms from $N_A^D$ to about $(N_A/2)^D/(D-1)!$ (from $10^8$ to $1.2\cdot10^6$ for $D=4$, $N_A=100$).
+Approximate running times: `Casimir_cont_ren.py` about 1 second, `Checks.py` and `Casimir_lattice.py` about 10 seconds, `Casimir_infinite_compare.py` about 30 seconds, `Energy_renormalization.py`, `Casimir_prescription_compare.py`, `Casimir_size_check.py` and `Casimir_massless.py` about 1 minute (most of it in $D=4$). The sums run only over the distinct transverse modes: $\sin^2(\pi n/N)=\sin^2(\pi(N-n)/N)$ and the spatial periodic directions of equal size can be permuted, which reduces the number of terms from $N_A^D$ to about $(N_A/2)^D/(D-1)!$ (from $10^8$ to $1.2\cdot10^6$ for $D=4$, $N_A=100$).
 
 ## Figures
 
@@ -76,6 +78,7 @@ Approximate running times: `Checks.py` and `Casimir_cont_ren.py` about 1 second,
 |---|---|
 | `Casimir_lattice.py` | `Casimir_lattice_2ds.pdf`, `Casimir_lattice_3d.pdf`, `Casimir_lattice_D<bc>s.pdf` (`DDirichlets` is Dirichlet = Neumann) |
 | `Casimir_massless.py` | `Casimir_massless_D<D>.pdf` |
+| `Casimir_infinite_compare.py` | `Casimir_infinite_D<D>.pdf` |
 | `Casimir_size_check.py` | `Casimir_size_A_D<D>.pdf`, `Casimir_size_L_D<D>.pdf` |
 | `Casimir_prescription_compare.py` | `Casimir_prescription_D<D>.pdf` |
 | `Casimir_cont_ren.py` | `Casimir_scalar_renorm.pdf` |
